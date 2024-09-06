@@ -7,79 +7,83 @@
 #define WRITE 1
 #define ERROR -1
 
+void
+filter_primes(int left_fd)
+{
+	int prime;
 
-void filter_primes(int left_fd) {
-    int primo;
+	if (read(left_fd, &prime, sizeof(int)) <= 0) {
+		close(left_fd);
+		exit(0);
+	}
 
-    if (read(left_fd, &primo, sizeof(int)) <= 0) {
-        close(left_fd);
-        exit(0);
-    }
+	printf("primo %d\n", prime);
+	fflush(stdout);
 
-    printf("primo %d\n", primo);
+	int fds[2];
+	if (pipe(fds) == ERROR) {
+		perror("Error al crear pipe");
+		exit(ERROR);
+	}
 
-    int fds[2];
-    pipe(fds);
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("Error al crear fork");
+		exit(ERROR);
+	} else if (pid == 0) {
+		close(fds[WRITE]);
+		close(left_fd);
+		filter_primes(fds[READ]);
+		close(fds[READ]);
+		exit(0);
+	} else {
+		close(fds[READ]);
 
-    pid_t pid = fork();
-    if (pid == 0) { 
-		// Proceso hijo
-        close(fds[WRITE]);
-        close(left_fd);
-        filter_primes(fds[READ]);
-        close(fds[READ]);
-        exit(0);
-    } else { 
-		// Proceso padre
-        close(fds[READ]);
+		int num;
+		while (read(left_fd, &num, sizeof(int)) > 0) {
+			if (num % prime != 0) {
+				write(fds[WRITE], &num, sizeof(int));
+			}
+		}
 
-        int num;
-        while (read(left_fd, &num, sizeof(int)) > 0) {
-            if (num % primo != 0) {
-                write(fds[WRITE], &num, sizeof(int));
-            }
-        }
-
-        close(fds[WRITE]);
-        close(left_fd);
-        wait(NULL);
-    }
+		close(fds[WRITE]);
+		close(left_fd);
+		wait(NULL);
+	}
 }
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        exit(ERROR);
-    }
+int
+main(int argc, char *argv[])
+{
+	if (argc < 2) {
+		exit(ERROR);
+	}
 
-    int n = atoi(argv[1]);
+	int last_num = atoi(argv[1]);
 
-    int fds[2];
-	if (pipe(fds) < 0) {
-        perror("Error al crear pipe");
-        exit(ERROR);
-    }
+	int fds[2];
+	if (pipe(fds) == ERROR) {
+		perror("Error al crear pipe.");
+		exit(ERROR);
+	}
 
-    pid_t pid = fork();
+	pid_t pid = fork();
 	if (pid < 0) {
-        perror("Error al crear fork");
-        exit(ERROR);
-    }
+		perror("Error al crear el fork.");
+		exit(ERROR);
+	} else if (pid == 0) {
+		close(fds[WRITE]);
+		filter_primes(fds[READ]);
+		exit(0);
+	} else {
+		close(fds[READ]);
+		for (int i = 2; i <= last_num; i++) {
+			write(fds[WRITE], &i, sizeof(int));
+		}
 
-    if (pid == 0) { // Proceso hijo
-        close(fds[WRITE]);
-        filter_primes(fds[READ]);
-        close(fds[READ]);
-        exit(0);
-    } else { // Proceso padre
-        close(fds[READ]);
+		close(fds[WRITE]);
+		wait(NULL);
+	}
 
-        for (int i = 2; i <= n; i++) {
-            write(fds[WRITE], &i, sizeof(int));
-        }
-
-        close(fds[WRITE]);
-        wait(NULL);
-    }
-
-    return 0;
+	exit(0);
 }
