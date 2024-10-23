@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+##
+## Usage: dock {build|run|exec}
+##
+
+DOCKER="docker"
+EXEC_CMD="exec"
+BUILD_CMD="build"
+RUN_CMD="container run"
+CONTAINER_NAME="sched"
+IMAGE_NAME="fisop-sched"
+PLATFORM="linux/amd64"
+
+usage() {
+	echo "Usage: $0 {build|run|exec}"
+	exit 1
+}
+
+build_container() {
+	$DOCKER $BUILD_CMD -t $IMAGE_NAME -f Dockerfile .
+}
+
+build_container2() {
+    $DOCKER buildx create --use
+    $DOCKER buildx build --platform linux/amd64,linux/arm64 -t $IMAGE_NAME -f Dockerfile .
+}
+
+
+run_container() {
+	$DOCKER $RUN_CMD --platform $PLATFORM -it --rm --name=$CONTAINER_NAME -v $(pwd):/sched $IMAGE_NAME bash
+}
+
+run_container2() {
+    $DOCKER $RUN_CMD --platform $PLATFORM -it --rm --name=$CONTAINER_NAME \
+    --cpus="2" --memory="4g" \
+    -v $(pwd):/sched $IMAGE_NAME bash
+}
+
+
+exec_container() {
+	$DOCKER $EXEC_CMD -it $CONTAINER_NAME bash
+}
+
+remove_container() {
+	$DOCKER container stop $CONTAINER_NAME
+	$DOCKER container rm $CONTAINER_NAME
+}
+
+delete_image() {
+	$DOCKER image rm $IMAGE_NAME
+}
+
+main() {
+	case $1 in
+		"build")
+			build_container
+		;;
+		"build2")
+			build_container2
+		;;
+		"run")
+			run_container
+		;;
+		"run2")
+			run_container2
+		;;
+		"exec")
+			exec_container
+		;;
+		"remove")
+			remove_container
+		;;
+		"delete")
+			delete_image
+		;;
+		*)
+			usage
+		;;
+	esac
+
+}
+
+main $1
