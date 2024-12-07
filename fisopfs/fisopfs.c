@@ -17,36 +17,6 @@
 char filedisk[MAX_PATH] = DEFAULT_FILE_DISK;
 
 
-// Función para buscar el inodo de un archivo dado un path
-/*int
-search_inode(const char *path)
-{
-        if (strcmp(path, "/") == 0) {
-                return 0;
-        }
-
-        // Si el path comienza con '/' lo descarto
-        const char *path_ws = path;
-        if (path[0] == '/') {
-                path_ws = path + 1;
-        }
-        char *path_copy = strdcmp(path_ws);
-        //char *path_copy = strdup(path_ws);
-        if (!path_copy) {
-                return -1;
-        }
-        for (int i = 0; i < MAX_INODES; i++) {
-                if (strcmp(path_copy, super_b.inodes[i].path) == 0) {
-                        free(path_copy);
-                        return i;
-                }
-        }
-
-        free(path_copy);
-        return -1;
-}
-*/
-
 static int
 fisopfs_getattr(const char *path, struct stat *st)
 {
@@ -54,7 +24,7 @@ fisopfs_getattr(const char *path, struct stat *st)
 
 	int pos = get_index_inodo(path);
 	if (pos == -1) {
-		fprintf(stderr, "[Debug] Error getattr: %s\n", strerror(errno));
+		fprintf(stderr, "[Debug] getattr: %s\n", strerror(errno));
 		errno = ENOENT;
 		return -ENOENT;
 	}
@@ -74,17 +44,6 @@ fisopfs_getattr(const char *path, struct stat *st)
 		st->st_mode = __S_IFREG | 0644;
 		st->st_nlink = 1;
 	}
-
-	/*
-	if (strcmp(path, "/") == 0) {
-	        st->st_uid = 1717;
-	} else if (strcmp(path, "/fisop") == 0) {
-	        st->st_uid = 1818;
-	        st->st_size = 2048;
-	} else {
-	        return -ENOENT;
-	}
-	*/
 
 	return 0;
 }
@@ -128,14 +87,6 @@ fisopfs_readdir(const char *path,
 	}
 
 	return 0;
-	/*
-	// Si nos preguntan por el directorio raiz, solo tenemos un archivo
-	if (strcmp(path, "/") == 0) {
-	        filler(buffer, "fisop", NULL, 0);
-	        return 0;
-	}
-
-	return -ENOENT;*/
 }
 
 #define MAX_CONTENIDO 100
@@ -218,14 +169,9 @@ static int
 fisopfs_mkdir(const char *path, mode_t mode)
 {
 	printf("[Debug] fisopfs_mkdir : %s\n", path);
-	// return create_dir(path, mode);
 	return create_file(path, mode, FS_DIR);
 }
 
-
-// static int fisopfs_ls(){
-// 	return 0;
-// }
 
 static int
 fisopfs_write(const char *path,
@@ -241,10 +187,6 @@ fisopfs_write(const char *path,
 	return write_file(path, buffer, size, offset);
 }
 
-// static int fisopfs_stat(){
-// 	return 0;
-// }
-
 
 static int
 fisopfs_unlink(const char *path)
@@ -253,13 +195,6 @@ fisopfs_unlink(const char *path)
 	// int i = search_inode(path);
 	return unlink(path);
 }
-
-// static int
-// fisopfs_unlink(const char *path){
-// 	printf("[Debug] fisopfs_unlink: %s\n", path);
-// 	return delete_file(path);
-// }
-
 
 static int
 fisopfs_rmdir(const char *path)

@@ -170,6 +170,7 @@ create_file(const char *path, mode_t mode, int type)
 	new_inodo.id_grup = getgid();
 	new_inodo.stats_info.last_acc = time(NULL);
 	new_inodo.stats_info.last_mod = time(NULL);
+	new_inodo.stats_info.creation = time(NULL);
 	strcpy(new_inodo.path, final_path);
 
 	if (type == FS_FILE) {
@@ -234,13 +235,6 @@ write_file(const char *path, const char *buffer, size_t size, off_t offset)
 		inode_index=get_index_inodo(path);
 	}
 	
-	/*for (int i = 0; i < MAX_INODES; i++) {
-		if (super_b.bitmap_inodes[i] &&
-		    strcmp(super_b.inodes[i].path, path) == 0) {
-			inode_index = i;
-			break;
-		}
-	}*/
 	if (inode_index == -1) {
 		fprintf(stderr, "Error: File not found.\n");
 		return -ENOENT;
@@ -256,12 +250,7 @@ write_file(const char *path, const char *buffer, size_t size, off_t offset)
 		fprintf(stderr, "Error: Cannot write to a directory.\n");
 		return -EACCES;
 	}
-	/*
-	if (offset + size > MAX_CONTENT) {
-		size = MAX_CONTENT - offset;
-	}
-	memcpy(file_inode->content + offset, buffer, size);
-	*/
+
 	strncpy(file_inode->content + offset, buffer,size);
 	file_inode->size = strlen(file_inode->content);
 	file_inode->stats_info.last_mod = time(NULL);
@@ -406,124 +395,7 @@ delete_dir(const char *path)
     memset(&super_b.inodes[pos], 0, sizeof(struct inode)); // Limpiar el inodo.
 
     return 0; 
-	/*ESTE BORRA TODO
-	int pos = get_index_inodo(path);
-	if(pos < 0){
-		return pos;
-	}
-	if(super_b.inodes[pos].type==FS_FILE){
-		return -1;	
-	}
-	char *new_path = remove_slash(path);
-	for(int j=0;j<MAX_INODES; j++){
-		if(strcmp(super_b.inodes[j].path,new_path)==0){
-			if(super_b.inodes[j].type==FS_FILE){
-				unlink(super_b.inodes[j].path);
-			}
-			if(super_b.inodes[j].type==FS_DIR){
-				delete_dir(super_b.inodes[j].path);
-			}
-		}
-	}
-
-	super_b.bitmap_inodes[pos]=0;
-	for (int k = 0; k < MAX_CONTENT; k++) {
-		super_b.inodes[pos].content[k] = 0;
-	}
-	for (int k = 0; k < MAX_PATH; k++) {
-		super_b.inodes[pos].path[k] = 0;
-	}
-
-	return 0;
-	HASTA ACA*/
-/*
-
-	struct inode *dir = &super_b.inodes[pos];
-	int tope=0;
-	struct inode **file = file_dir(path, &tope);
-	if(!file){
-		fprintf(stderr,"[Debug] Error rmdir1 %s\n",strerror(errno));
-		errno=ENOMEM;
-		return -ENOMEM;
-	}
-	free(file);
-
-
-	if(tope>0){
-		fprintf(stderr,"[Debug] Error rmdir3: %s\n",strerror(errno));
-		errno=ENOTEMPTY;
-		return -ENOTEMPTY;	
-	}
-	super_b.bitmap_inodes[pos] = 0;
-	memset(dir, 0, sizeof(struct inode));
-	return 0;
-
-
-	// Encontramos el inodo segun el path pasado por parametro
-	for (int i = 0; i < MAX_INODES; i++) {
-		if (strcmp(new_path,super_b.inodes[i].path) == 0) {
-			if(super_b.inodes[i].type == FS_FILE){
-				int j = get_index_inodo(super_b.inodes[i].path);
-				if(j<0) return j;
-				if(super_b.inodes[j].type==FS_DIR) return -1;
-				super_b.bitmap_inodes[j]=0;
-				for (int k = 0; k < MAX_INODES; k++) {
-					super_b.inodes[j].content[k] = 0;
-				}
-				for(int k = 0; k<MAX_PATH;k++){
-					super_b.inodes[j].path[k]=0;
-				}
-				return 0;
-			}
-			else{
-				delete_dir(super_b.inodes[i].path);
-			}
-		}
-	}
-	free(new_path);
-	super_b.bitmap_inodes[pos] = 0;
-
-	for (int k = 0; k < MAX_CONTENT; k++) {
-		super_b.inodes[pos].content[k] = 0;
-	}
-	for (int l = 0; l < MAX_PATH; l++) {
-		super_b.inodes[pos].path[l] = 0;
-	}
-
-
-			// chequamos que sea un directorio
-			if (dir->type != FS_DIR) {
-				fprintf(stderr, "[Debug] Error: %s is not a directory.\n", path);
-				return -1;
-			}
-				if (super_b.bitmap_inodes[j]) {
-					struct inode *entry = &super_b.inodes[j];
-					if (strncmp(entry->directory_path,
-					            path,
-					            strlen(path)) == 0) {
-						// si es un dir lo borramos recursivamente
-						if (entry->type == FS_DIR) {
-							if (delete_dir(entry->path) !=
-							    0) {
-								fprintf(stderr, "[Debug] Error: Failed to delete subdirectory %s.\n", entry->path);
-								return -1;
-							}
-						}
-						// si es un archivo, lo borramos
-						else if (entry->type == FS_FILE) {
-							if (delete_file(entry->path) !=
-							    0) {
-								fprintf(stderr, "[Debug] Error: Failed to delete file %s.\n", entry->path);
-								return -1;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	fprintf(stderr, "[Debug] Error: Directory %s not found.\n", path);
-	return -1;*/
+	
 }
 
 // list dir
