@@ -429,6 +429,50 @@ sys_ipc_recv(void *dstva)
 	return 0;
 }
 
+// Return priority of specified env by id
+static int
+sys_get_priority_id(envid_t id)
+{
+	for (int i = 0; i < NENV; i++) {
+		struct Env *env = &envs[i];
+		if (env->env_id == id) {
+			return env->priority;
+		}
+	}
+	return -1;
+}
+
+// Return priority of env by id
+static int
+sys_get_priority(envid_t id)
+{
+	for (int i = 0; i < NENV; i++) {
+		struct Env *env = &envs[i];
+		if (env->env_id == id) {
+			return env->priority;
+		}
+	}
+	return -1;
+}
+
+// Set a new priority for env by id
+static int
+sys_set_priority(envid_t id, int new_priority)
+{
+	for (int i = 0; i < NENV; i++) {
+		struct Env *env = &envs[i];
+		if (env->env_id == id) {
+			if (new_priority < env->priority) {
+				env->priority =
+				        new_priority;  // only allows to reduce priority
+			}
+			return 0;
+		}
+	}
+	return -1;  // id not found
+}
+
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -464,6 +508,13 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_env_set_pgfault_upcall(a1, (void *) a2);
 	case SYS_yield:
 		sys_yield();  // No return
+	case SYS_get_priority_id:
+		return sys_get_priority_id(a1);
+	case SYS_get_priority:
+		return sys_get_priority(a1);
+	case SYS_set_priority:
+		return sys_set_priority(a1, a2);
+
 	default:
 		return -E_INVAL;
 	}

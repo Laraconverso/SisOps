@@ -29,6 +29,9 @@ typedef int32_t envid_t;
 #define NENV (1 << LOG2NENV)
 #define ENVX(envid) ((envid) & (NENV - 1))
 
+#define MAX_PRIORITY 7
+#define MIN_PRIORITY 0
+
 // Values of env_status in struct Env
 enum { ENV_FREE = 0, ENV_DYING, ENV_RUNNABLE, ENV_RUNNING, ENV_NOT_RUNNABLE };
 
@@ -46,6 +49,7 @@ struct Env {
 	unsigned env_status;      // Status of the environment
 	uint32_t env_runs;        // Number of times environment has run
 	int env_cpunum;           // The CPU that the env is running on
+	int priority;  // Priority level for priority-based scheduling
 
 	// Address space
 	pde_t *env_pgdir;  // Kernel virtual address of page dir
@@ -59,6 +63,9 @@ struct Env {
 	uint32_t env_ipc_value;  // Data value sent to us
 	envid_t env_ipc_from;    // envid of the sender
 	int env_ipc_perm;        // Perm of page mapping received
+
+
+	unsigned int env_times_boosted;  // Number of times the environment has been boosted
 };
 
 #endif  // !JOS_INC_ENV_H

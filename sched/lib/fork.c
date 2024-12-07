@@ -178,7 +178,6 @@ fork_v0(void)
 		dup_or_share(envid, pnum, perm);
 	}
 
-
 	int r;
 	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
 		panic("sys_env_set_status: %e", r);
@@ -220,6 +219,7 @@ fork(void)
 	// Parent
 	uint32_t pnum = 0;
 	uint32_t pnum_end = (UTOP >> PGSHIFT);
+
 
 	// Handle all pages below UTOP
 	for (pnum = 0; pnum < pnum_end; pnum++) {

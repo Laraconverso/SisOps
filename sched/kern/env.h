@@ -6,6 +6,8 @@
 #include <inc/env.h>
 #include <kern/cpu.h>
 
+#define DEFAULT_PRIORITY 5
+
 extern struct Env *envs;           // All environments
 #define curenv (thiscpu->cpu_env)  // Current environment
 extern struct Segdesc gdt[];

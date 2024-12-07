@@ -16,7 +16,10 @@ enum {
 	SYS_yield,
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
-	NSYSCALLS
+	SYS_get_priority,  // Syscall to get the current process priority
+	SYS_set_priority,  // Syscall to set the priority of the current process
+	SYS_get_priority_id,  // Syscall to get priority of a process by ID
+	NSYSCALLS             // Total number of syscalls
 };
 
 #endif /* !JOS_INC_SYSCALL_H */

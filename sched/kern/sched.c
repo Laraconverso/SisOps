@@ -5,13 +5,26 @@
 #include <kern/pmap.h>
 #include <kern/monitor.h>
 
+#define BOOST_CYCLES 100
+
 void sched_halt(void);
 void sched_rr(void);
+void priority_sched(void);
 
 // Choose a user environment to run and run it.
+struct stadistics {
+	uint32_t amount_of_sc_calls;
+	uint32_t runs_total;
+	uint32_t sched_times_boosted;
+};
+
+struct stadistics stats = { 0, 0, 0 };
+
 void
 sched_yield(void)
 {
+	stats.amount_of_sc_calls++;
+
 #ifdef SCHED_ROUND_ROBIN
 	// Implement simple round-robin scheduling.
 	//
@@ -41,6 +54,7 @@ sched_yield(void)
 	// environment is selected and run every time.
 
 	// Your code here - Priorities
+	priority_sched();
 #endif
 
 	// Without scheduler, keep runing the last environment while it exists
@@ -66,21 +80,95 @@ sched_rr()
 		int index = (start + i) % NENV;
 		if (envs[index].env_status == ENV_RUNNABLE) {
 			// aca termina el for porque el env_run toma el control del entorno
+			stats.runs_total++;
 			env_run(&envs[index]);
 		}
 	}
 	// si no se encuentra ningun proceso con la prioridad pasada
 	// miro el status actual. Si es running, continuo ejecutando
 	if (curenv && curenv->env_status == ENV_RUNNING) {
+		stats.runs_total++;
 		env_run(curenv);
 	}
 	// Si no encuentro nada, detengo la CPU.
 	sched_halt();
 }
 
+void
+priority_sched(void)
+{
+	struct Env *idle = curenv;
+	struct Env *highest_priority_env = NULL;
+
+	static int boost_counter = 0;
+
+	if (++boost_counter >= BOOST_CYCLES) {
+		for (int i = 0; i < NENV; i++) {
+			if (envs[i].env_status == ENV_RUNNABLE &&
+			    envs[i].priority < DEFAULT_PRIORITY) {
+				envs[i].priority =
+				        DEFAULT_PRIORITY;  // Boost priority to the maximum
+				envs[i].env_times_boosted++;
+				stats.sched_times_boosted++;
+			}
+		}
+		boost_counter = 0;  // Reset counter
+	}
+
+	for (int i = 0; i < NENV; i++) {
+		if (envs[i].env_status == ENV_RUNNABLE) {
+			if (!highest_priority_env ||
+			    envs[i].priority > highest_priority_env->priority) {
+				highest_priority_env = &envs[i];
+			}
+		}
+	}
+
+	if (highest_priority_env) {
+		if (highest_priority_env->priority > 1) {
+			highest_priority_env->priority--;
+		}
+		stats.runs_total++;
+		env_run(highest_priority_env);
+	} else {
+		if (idle && idle->env_status == ENV_RUNNING) {
+			env_run(idle);
+		} else {
+			sched_halt();
+		}
+	}
+}
+
+
 // Halt this CPU when there is nothing to do. Wait until the
 // timer interrupt wakes it up. This function never returns.
 //
+void
+print_statistics()
+{
+	cprintf("\n=> Scheduler statistics: \n");
+
+	cprintf("* Times schedule was called: %d\n", stats.runs_total);
+	cprintf("* Times schedule has boosted priorities: %d\n",
+	        stats.sched_times_boosted);
+
+	cprintf("\n=> Processes statistics: \n");
+
+	cprintf("Env Id \t | runs \t | boosts \t "
+	        "\n");
+	cprintf("———————————————————————————————————————"
+	        "\n");
+
+	for (int i = 0; i < NENV; i++) {
+		if (envs[i].env_runs != 0) {
+			cprintf("%d \t | %d \t | %d \t \n",
+			        envs[i].env_id,
+			        envs[i].env_runs,
+			        envs[i].env_times_boosted);
+		};
+	}
+}
+
 void
 sched_halt(void)
 {
@@ -96,6 +184,9 @@ sched_halt(void)
 	}
 	if (i == NENV) {
 		cprintf("No runnable environments in the system!\n");
+
+		print_statistics();
+
 		while (1)
 			monitor(NULL);
 	}

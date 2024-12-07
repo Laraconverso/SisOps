@@ -21,6 +21,7 @@ static struct Env *env_free_list;  // Free environment list
 
 #define ENVGENSHIFT 12  // >= LOGNENV
 
+
 // Global descriptor table.
 //
 // Set up global descriptor table (GDT) with separate segments for
@@ -119,6 +120,7 @@ env_init(void)
 		envs[i].env_id = 0;
 		envs[i].env_status = ENV_FREE;
 		envs[i].env_link = (envs + i + 1);
+		envs[i].priority = DEFAULT_PRIORITY;  // 0 == no run.
 	}
 	envs[NENV - 1].env_link = NULL;
 	env_free_list = envs;
@@ -227,6 +229,9 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_type = ENV_TYPE_USER;
 	e->env_status = ENV_RUNNABLE;
 	e->env_runs = 0;
+	e->priority =
+	        DEFAULT_PRIORITY;  // Set initial priority for priority scheduling
+
 
 	// Clear out all the saved register state,
 	// to prevent the register values
@@ -510,14 +515,13 @@ env_run(struct Env *e)
 	//	and make sure you have set the relevant parts of
 	//	e->env_tf to sensible values.
 	// Your code here
-	if(curenv && curenv->env_status == ENV_RUNNING){
+	if (curenv && curenv->env_status == ENV_RUNNING) {
 		curenv->env_status = ENV_RUNNABLE;
 	}
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
 	curenv->env_runs++;
 	env_load_pgdir(curenv);
-
 
 
 	// Needed if we run with multiple procesors
