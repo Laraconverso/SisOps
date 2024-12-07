@@ -47,7 +47,7 @@ main(int argc, char *argv[])
 		if (line[chars_read - 1] == NEW_LINE) {
 			line[chars_read - 1] = END_STRING;
 		}
-		
+
 		args[cant_args] = line;
 		cant_args++;
 
@@ -55,7 +55,7 @@ main(int argc, char *argv[])
 			execute(args);
 			cant_args = 1;
 		}
-		free(line);
+
 		line = NULL;
 	}
 
